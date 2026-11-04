@@ -3,6 +3,7 @@ name = "shioaji-mcp"
 version = "0.1.0"
 description = "Read-only MCP server for the Shioaji (Sinopac) trading API"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "mcp[cli]>=2.3.0",
