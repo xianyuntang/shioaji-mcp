@@ -1,14 +1,14 @@
 # shioaji-mcp
 
-Read-only [MCP](https://modelcontextprotocol.io/) server for [Shioaji](https://sinotrade.github.io/), the Sinopac (永豐金證券) trading API. It exposes market data and account queries to MCP clients such as Claude Code. It has **no order tools**: it cannot place, modify or cancel orders.
+永豐金證券 [Shioaji](https://sinotrade.github.io/) API 的唯讀 [MCP](https://modelcontextprotocol.io/) 伺服器。讓 Claude Code 等 MCP client 查詢行情與帳務資料。**不提供任何下單工具**，無法下單、改單或刪單。
 
-## Requirements
+## 需求
 
-- Python 3.12+
+- Python 3.12 以上
 - [uv](https://docs.astral.sh/uv/)
-- A Sinopac securities account with API keys (apply in Sinopac's API management page)
+- 永豐金證券帳戶，並已在 API 管理頁面申請 API Key
 
-## Setup
+## 安裝
 
 ```bash
 git clone https://github.com/xianyuntang/shioaji-mcp.git
@@ -16,24 +16,24 @@ cd shioaji-mcp
 uv sync
 ```
 
-Create `.env` in the project root (it is gitignored):
+在專案根目錄建立 `.env`（已列入 `.gitignore`）：
 
 ```dotenv
-SJ_API_KEY=your_api_key
-SJ_SEC_KEY=your_secret_key
+SJ_API_KEY=你的_api_key
+SJ_SEC_KEY=你的_secret_key
 SJ_PRODUCTION=false
-# Optional, only needed for ca_status
-SJ_CA_PATH=/absolute/path/to/Sinopac.pfx
-SJ_CA_PASSWD=your_ca_password
+# 選填，只有 ca_status 會用到
+SJ_CA_PATH=/絕對路徑/Sinopac.pfx
+SJ_CA_PASSWD=憑證密碼
 ```
 
-Add it to Claude Code:
+加入 Claude Code：
 
 ```bash
 claude mcp add shioaji -- uv --directory /path/to/shioaji-mcp run --env-file .env main.py
 ```
 
-Other MCP clients (JSON config):
+其他 MCP client（JSON 設定）：
 
 ```json
 {
@@ -46,59 +46,59 @@ Other MCP clients (JSON config):
 }
 ```
 
-## Environment variables
+## 環境變數
 
-| Variable | Required | Default | Description |
+| 變數 | 必填 | 預設 | 說明 |
 |---|---|---|---|
-| `SJ_API_KEY` | yes | — | API key from Sinopac API management |
-| `SJ_SEC_KEY` | yes | — | Secret key paired with `SJ_API_KEY` |
-| `SJ_PRODUCTION` | no | `false` | `true` logs in to the real account; otherwise the simulation environment is used |
-| `SJ_CA_PATH` | no | — | Absolute path to the certificate file (`.pfx`) |
-| `SJ_CA_PASSWD` | no | — | Certificate password (usually your national ID) |
+| `SJ_API_KEY` | 是 | — | 永豐 API 管理頁面取得的 API Key |
+| `SJ_SEC_KEY` | 是 | — | 與 `SJ_API_KEY` 配對的 Secret Key |
+| `SJ_PRODUCTION` | 否 | `false` | 設 `true` 登入正式帳戶，否則使用模擬環境 |
+| `SJ_CA_PATH` | 否 | — | 憑證檔（`.pfx`）的絕對路徑 |
+| `SJ_CA_PASSWD` | 否 | — | 憑證密碼（通常是身分證字號） |
 
-The certificate is only activated so `ca_status` can report its expiry. Queries do not need it, and a failed activation does not block them.
+憑證只用來讓 `ca_status` 回報到期時間。查詢功能不需要憑證，憑證啟用失敗也不影響查詢。
 
-Login happens lazily on the first tool call, and the session is reused for the life of the process.
+第一次呼叫工具時才登入，之後整個程序共用同一個 session。
 
-## Tools
+## 工具
 
-**Contracts and market data**
+**商品與行情**
 
-| Tool | Description |
+| 工具 | 說明 |
 |---|---|
-| `get_contract` | Contract details (reference price, limit up/down, day-trade, margin/short info) |
-| `get_snapshots` | Latest snapshot for up to 500 codes |
-| `get_kbars` | 1-minute K bars for a date range |
-| `get_ticks` | Ticks of one day (all, last N, or a time range) |
-| `scan` | Rankings: change %, change price, day range, volume, amount, tick count |
-| `credit_enquires` | Margin purchase / short sale balances (資券餘額) |
-| `short_stock_sources` | Shares available for short selling (借券賣出餘額) |
-| `disposition_stocks` | Disposition stocks (處置股) |
-| `attention_stocks` | Attention stocks (注意股) |
-| `usage` | API connections and daily traffic quota |
+| `get_contract` | 商品資料（參考價、漲跌停、當沖、資券資訊） |
+| `get_snapshots` | 最新快照，一次最多 500 檔 |
+| `get_kbars` | 指定日期區間的 1 分 K |
+| `get_ticks` | 單日逐筆成交（全部、最後 N 筆或時間區間） |
+| `scan` | 排行：漲跌幅、漲跌價、振幅、成交量、成交金額、成交筆數 |
+| `credit_enquires` | 資券餘額 |
+| `short_stock_sources` | 借券賣出餘額 |
+| `disposition_stocks` | 處置股 |
+| `attention_stocks` | 注意股 |
+| `usage` | API 連線數與每日流量額度 |
 
-**Account**
+**帳務**
 
-| Tool | Description |
+| 工具 | 說明 |
 |---|---|
-| `list_accounts` | Stock / futures accounts |
-| `account_balance` | Settlement bank account balance |
-| `settlements` | Upcoming settlements (T, T+1, T+2) |
-| `trading_limits` | Stock trading, margin and short limits |
-| `futures_margin` | Futures/options equity, margin, risk indicator |
-| `list_positions` / `list_position_detail` | Open positions with unrealized PnL |
-| `list_profit_loss` / `list_profit_loss_detail` / `list_profit_loss_summary` | Realized PnL |
-| `list_trades` | Today's orders and fills |
-| `ca_status` | Certificate activation result and expiry |
+| `list_accounts` | 證券／期貨帳戶 |
+| `account_balance` | 交割銀行帳戶餘額 |
+| `settlements` | 交割款（T、T+1、T+2） |
+| `trading_limits` | 證券交易額度、融資融券額度 |
+| `futures_margin` | 期權權益數、保證金、風險指標 |
+| `list_positions` / `list_position_detail` | 未實現損益與持倉明細 |
+| `list_profit_loss` / `list_profit_loss_detail` / `list_profit_loss_summary` | 已實現損益 |
+| `list_trades` | 今日委託與成交 |
+| `ca_status` | 憑證啟用結果與到期時間 |
 
-Code formats: stock `2330`, continuous futures `TXFR1`, option `TXO31200G6`, index `IX0001` (TAIEX).
+商品代碼格式：股票 `2330`、期貨近月連續 `TXFR1`、選擇權 `TXO31200G6`、指數 `IX0001`（加權指數）。
 
-Market data calls count toward Shioaji's daily traffic quota. Do not poll them for live prices.
+行情查詢會計入 Shioaji 每日流量額度，不要用來輪詢即時報價。
 
-## Disclaimer
+## 免責聲明
 
-Unofficial project, not affiliated with Sinopac. Provided as-is with no warranty. Use at your own risk.
+非官方專案，與永豐金證券無關。依現狀提供，不負任何擔保，使用風險自負。
 
-## License
+## 授權
 
 [MIT](LICENSE)
